@@ -1,0 +1,5 @@
+import postal from './postal-regions.json' with {type:'json'};
+export const GEO_SOURCE={name:'GeoNames Postal Codes',url:'https://www.geonames.org/',download:'https://download.geonames.org/export/zip/DE.zip',retrieved_at:'2026-10-06',license:'Creative Commons Attribution 4.0 according to dataset README',precision:'Ungefähre Mittelpunkte eindeutig einem Bundesland zugeordneter Siedlungs-PLZ; keine Grundstückskoordinaten.'};
+export function postalLocation(location){const code=String(location??'').match(/\b\d{5}\b/)?.[0],row=postal[code];return row?{postal_code:code,state:row[0],latitude:row[1],longitude:row[2],basis:'geonames_postal_centroid',approximate:true}:null;}
+export function postalCenter(code){return postalLocation(code);}
+export function distanceKm(a,b){const rad=x=>x*Math.PI/180,dl=rad(b.latitude-a.latitude),dn=rad(b.longitude-a.longitude),h=Math.sin(dl/2)**2+Math.cos(rad(a.latitude))*Math.cos(rad(b.latitude))*Math.sin(dn/2)**2;return Math.round(6371*2*Math.asin(Math.min(1,Math.sqrt(h)))*10)/10;}
