@@ -1,13 +1,13 @@
-const NUMBER='(?:\\d{1,3}(?:[. \\u00a0]\\d{3})+|\\d+)(?:[,.]\\d{1,2})?';
-const DASH='(?:[,\\.]\\s*[-–—])?';
-const CURRENCY='(?:Euro\\b|EUR\\b|€)';
+const NUMBER='(?:\d{1,3}(?:[. \u00a0]\d{3})+|\d+)(?:[,.]\d{1,2})?';
+const DASH='(?:[,.]\s*[-–—])?';
+const CURRENCY='(?:Euro\b|EUR\b|€)';
 const AREA_UNIT='(?:m²|m2|qm|Quadratmeter)';
-const PRICED_AREA_UNIT='(?:'+AREA_UNIT+'|ha\\b|Hektar\\b|Ar(?:e|i)?\\b)';
+const PRICED_AREA_UNIT='(?:'+AREA_UNIT+'|ha\b|Hektar\b|Ar(?:e|i)?\b)';
 export const areaUnitDivisor=unit=>unit==='ha'?10000:unit==='ar'?100:1;
-const unitOf=s=>/ha|Hektar/i.test(s)?'ha':/\\bAr(?:e|i)?\\b/i.test(s)?'ar':'m2';
+const unitOf=s=>/ha|Hektar/i.test(s)?'ha':/\bAr(?:e|i)?\b/i.test(s)?'ar':'m2';
 export function germanAmount(value){
- let s=String(value).trim().replace(/\\s/g,'').replace(/[,.][-–—]$/,'');
- if(s.includes(','))s=s.replace(/\\./g,'').replace(',','.');else if(/^\\d{1,3}(?:\\.\\d{3})+$/.test(s))s=s.replace(/\\./g,'');
+ let s=String(value).trim().replace(/\s/g,'').replace(/[,.][-–—]$/,'');
+ if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');else if(/^\d{1,3}(?:\.\d{3})+$/.test(s))s=s.replace(/\./g,'');
  const n=Number(s);return Number.isFinite(n)&&n>0?n:null;
 }
 export function areaEvidence(text,structuredArea=null){
@@ -22,12 +22,12 @@ export function areaEvidence(text,structuredArea=null){
  return {area_kind:conflict?'conflicting':minimum?'minimum':range?'range':structuredArea?'specific_claim':'unknown',area_conflict:conflict,area_min_m2:min??low,area_max_m2:high,area_observations:observations,area_m2:conflict||minimum||range?null:structuredArea};
 }
 export function monetaryObservations(text){return [...String(text).matchAll(new RegExp('('+NUMBER+')'+DASH+'\\s*'+CURRENCY+'(\\s*(?:/|pro|je)\\s*'+PRICED_AREA_UNIT+')?','gi'))].map(m=>{
- const suffix=String(text).slice(m.index+m[0].length,m.index+m[0].length+55),prefix=String(text).slice(Math.max(0,m.index-45),m.index),period=/^\\s*(?:p\\.?\\s*a\\.?|/\\s*(?:Jahr|a\\b)|pro\\s+Jahr|je\\s+Jahr|jährlich|im\\s+Jahr)/i.test(suffix)||/(?:jährlicher?\\s+(?:Erbbauzins|Erbpacht|Pacht)|Erbbauzins\\s*(?:pro\\s+Jahr)?\\s*:)\\s*$/i.test(prefix)?'year':/^\\s*(?:/\\s*Monat|pro\\s+Monat|je\\s+Monat|monatlich)/i.test(suffix)?'month':null;
- const before=new RegExp('(?:pro|je)\\s*('+PRICED_AREA_UNIT+')\\s*(?:(?:kostet|beträgt|:|=)\\s*)?$','i').exec(prefix);
+ const suffix=String(text).slice(m.index+m[0].length,m.index+m[0].length+55),prefix=String(text).slice(Math.max(0,m.index-45),m.index),period=/^\s*(?:p\.?\s*a\.?|/\s*(?:Jahr|a\b)|pro\s+Jahr|je\s+Jahr|jährlich|im\s+Jahr)/i.test(suffix)||/(?:jährlicher?\s+(?:Erbbauzins|Erbpacht|Pacht)|Erbbauzins\s*(?:pro\s+Jahr)?\s*:)\s*$/i.test(prefix)?'year':/^\s*(?:/\s*Monat|pro\s+Monat|je\s+Monat|monatlich)/i.test(suffix)?'month':null;
+ const before=new RegExp('(?:pro|je)\\s*('+PRICED_AREA_UNIT+')\\s*(?:(?:kostet|beträgt|:|=)\s*)?$','i').exec(prefix);
  return {amount:germanAmount(m[1]),currency:'EUR',unit:m[2]?unitOf(m[2]):before?unitOf(before[1]):'object',...(period?{period}:{}),quote:before?before[0]+m[0]:m[0],start:before?m.index-before[0].length:m.index,end:m.index+m[0].length};}).filter(o=>o.amount!==null);}
 export function explicitTotalPrice(text,amount){
- const label=new RegExp('(?<![\\p{L}])(?:Gesamt(?:kauf)?preis|Kaufpreis|Preis)\\s*:?\\s*(?:von\\s*)?(?:VB\\s*|ca\\.?\\s*)?('+NUMBER+')'+DASH+'\\s*'+CURRENCY+'(?!\\s*(?:/|pro|je))','giu');
- return [...String(text).matchAll(label)].some(m=>germanAmount(m[1])===amount&&!/^\\s*(?:p\\.?\\s*a\\.?|jährlich|monatlich)/i.test(String(text).slice(m.index+m[0].length,m.index+m[0].length+25)));
+ const label=new RegExp('(?<![\p{L}])(?:Gesamt(?:kauf)?preis|Kaufpreis|Preis)\s*:?\s*(?:von\s*)?(?:VB\s*|ca\.?\s*)?('+NUMBER+')'+DASH+'\s*'+CURRENCY+'(?!\\s*(?:/|pro|je))','giu');
+ return [...String(text).matchAll(label)].some(m=>germanAmount(m[1])===amount&&!/^\s*(?:p\.?\s*a\.?|jährlich|monatlich)/i.test(String(text).slice(m.index+m[0].length,m.index+m[0].length+25)));
 }
 export function unitPriceIndicated(display,amount,description=''){
  const direct=new RegExp(CURRENCY+'\\s*(?:/|pro|je)\\s*'+AREA_UNIT,'i');
@@ -37,24 +37,24 @@ export function unitPriceIndicated(display,amount,description=''){
  if(statedTotal&&germanAmount(statedTotal[1])===amount)return false;
  if(matching)return true;
  if(observations.some(o=>o.unit==='m2'))return false;
- return new RegExp('(?:angezeigte[rn]?\\s+Preis|Festpreis)\\s+(?:bezieht\\s+sich|gilt|ist)\\s*(?:auf|pro|je|für)\\s*'+AREA_UNIT+'|(?:Preis|Kaufpreis)\\s+(?:pro|je)\\s*'+AREA_UNIT,'i').test(description);
+ return new RegExp('(?:angezeigte[rn]?\s+Preis|Festpreis)\s+(?:bezieht\s+sich|gilt|ist)\s*(?:auf|pro|je|für)\s*'+AREA_UNIT+'|(?:Preis|Kaufpreis)\s+(?:pro|je)\s*'+AREA_UNIT,'i').test(description);
 }
 export function priceAreaSelection(text,areaM2){
- const multiple=/(?:\\b(?:[2-9]|[1-9]\\d+|zwei|drei|vier|mehrere)\\s+(?:Flurstück|Grundstück|Bauparzell)|aufgeteilt\\s+in)/i.test(text),partial=[...text.matchAll(/Teilkauf|Teilverkauf|einzelne[rsn]?\\s+(?:Flurstück|Grundstück|Parzelle)|einzeln\\s*(?:verkauf|kauf|möglich)/ig)].some(m=>!/(?:kein(?:e[rns]?)?|nicht|ohne)\\s*$/i.test(text.slice(Math.max(0,m.index-20),m.index))&&!/^\\s*(?:ist\\s+)?(?:ausgeschlossen|nicht\\s+möglich|unmöglich)/i.test(text.slice(m.index+m[0].length,m.index+m[0].length+35))),claims=monetaryObservations(text),totals=new Set(claims.filter(o=>o.unit==='object').map(o=>o.amount));
+ const multiple=/(?:\b(?:[2-9]|[1-9]\d+|zwei|drei|vier|mehrere)\s+(?:Flurstück|Grundstück|Bauparzell)|aufgeteilt\s+in)/i.test(text),partial=[...text.matchAll(/Teilkauf|Teilverkauf|einzelne[rsn]?\s+(?:Flurstück|Grundstück|Parzelle)|einzeln\s*(?:verkauf|kauf|möglich)/ig)].some(m=>!/(?:kein(?:e[rns]?)?|nicht|ohne)\s*$/i.test(text.slice(Math.max(0,m.index-20),m.index))&&!/^\s*(?:ist\s+)?(?:ausgeschlossen|nicht\s+möglich|unmöglich)/i.test(text.slice(m.index+m[0].length,m.index+m[0].length+35))),claims=monetaryObservations(text),totals=new Set(claims.filter(o=>o.unit==='object').map(o=>o.amount));
  const required=multiple&&partial&&(totals.size>1||areaM2!=null);
  return {object_selection_required:required,...(required?{object_selection_reason:'Mehrere Teilobjekte mit möglichem Einzelkauf: Preis und Fläche müssen einem konkreten Kaufgegenstand zugeordnet werden.',monetary_claims:claims.slice(0,20),area_kind:'selection_required'}:{})};
 }
 export function priceEvidence(text,areaM2){
- const regex=new RegExp('(?<![\\p{L}])(?:Mindest(?:gebot|angebot|kaufpreis)|Geringst(?:es\\s+)?(?:Bar)?gebot|Verkehrswert|Orientierungs(?:wert|preis)|Kaufpreisvorstellung|Auktionslimit|Startpreis|Gesamtkaufpreis|Gesamtpreis|Kaufpreis|Aufgeld|Preis|Kaufangebot)\\s*(?:\\([^)]*\\))?\\s*[:\\-]?\\s*(?:(?:in\\s+Höhe\\s+)?von\\s*)?(?:VB\\s*|ca\\.?\\s*)?('+NUMBER+')(?:\\s*%|\\s*Prozent)?'+DASH+'\\s*'+CURRENCY+'(\\s*(?:/|pro|je)\\s*'+PRICED_AREA_UNIT+')?','giu');
- const observations=[...text.matchAll(regex)].filter(m=>!/(?:\\bkein(?:e[rns]?)?|\\bnicht)\\s*$/i.test(text.slice(Math.max(0,m.index-35),m.index))).map(m=>{const label=m[0].slice(0,m[1].length),kind=/^(?:Mindest|Geringst|Auktionslimit|Startpreis)/i.test(m[0])?'minimum_offer':/^Verkehrswert/i.test(m[0])?'valuation_reference':/^(?:Orientierungs|Kaufpreisvorstellung)/i.test(m[0])?'guide_value':/^Aufgeld/i.test(m[0])?'auction_premium':'asking_price',unit=m[2]?unitOf(m[2]):'object',amount=germanAmount(m[1]),period=monetaryObservations(text).find(o=>o.start>=m.index&&o.end<=m.index+m[0].length)?.period;return {kind,amount,currency:'EUR',unit,...(/%|Prozent/.test(label)?{premium_percent:true}:{}),...(period?{period}:{}),quote:m[0],start:m.index,end:m.index+m[0].length};}).filter(o=>o.amount!==null);
- const premium=new RegExp('(?<![\\p{L}])Aufgeld\\s*(?:\\([^)]*\\))?\\s*[:\\-]?\\s*(?:(?:in\\s+Höhe\\s+)?von\\s*)?('+NUMBER+')\\s*(?:%|Prozent)','giu');
+ const regex=new RegExp('(?<![\p{L}])(?:Mindest(?:gebot|angebot|kaufpreis)|Geringst(?:es\s+)?(?:Bar)?gebot|Verkehrswert|Orientierungs(?:wert|preis)|Kaufpreisvorstellung|Auktionslimit|Startpreis|Gesamtkaufpreis|Gesamtpreis|Kaufpreis|Aufgeld|Preis|Kaufangebot)\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:(?:in\s+Höhe\s+)?von\s*)?(?:VB\s*|ca\.?\s*)?('+NUMBER+')(?:\s*%|\s*Prozent)?'+DASH+'\s*'+CURRENCY+'(\s*(?:/|pro|je)\s*'+PRICED_AREA_UNIT+')?','giu');
+ const observations=[...text.matchAll(regex)].filter(m=>!/(?:\bkein(?:e[rns]?)?|\bnicht)\s*$/i.test(text.slice(Math.max(0,m.index-35),m.index))).map(m=>{const label=m[0].slice(0,m[1].length),kind=/^(?:Mindest|Geringst|Auktionslimit|Startpreis)/i.test(m[0])?'minimum_offer':/^Verkehrswert/i.test(m[0])?'valuation_reference':/^(?:Orientierungs|Kaufpreisvorstellung)/i.test(m[0])?'guide_value':/^Aufgeld/i.test(m[0])?'auction_premium':'asking_price',unit=m[2]?unitOf(m[2]):'object',amount=germanAmount(m[1]),period=monetaryObservations(text).find(o=>o.start>=m.index&&o.end<=m.index+m[0].length)?.period;return {kind,amount,currency:'EUR',unit,...(/%|Prozent/.test(label)?{premium_percent:true}:{}),...(period?{period}:{}),quote:m[0],start:m.index,end:m.index+m[0].length};}).filter(o=>o.amount!==null);
+ const premium=new RegExp('(?<![\p{L}])Aufgeld\s*(?:\([^)]*\))?\s*[:\-]?\s*(?:(?:in\s+Höhe\s+)?von\s*)?('+NUMBER+')\s*(?:%|Prozent)','giu');
  for(const m of text.matchAll(premium))observations.push({kind:'auction_premium',amount:germanAmount(m[1]),currency:'EUR',unit:'percent',premium_percent:true,quote:m[0],start:m.index,end:m.index+m[0].length});
- const floor=new RegExp('Gebote?(?:\\s*,)?(?:\\s+die)?\\s+unter(?:\\s+einem)?(?:\\s+Betrag)?(?:\\s+von)?\\s*('+NUMBER+')'+DASH+'\\s*'+CURRENCY+'[^.!?]{0,180}\\bsind\\s+(?:grundsätzlich\\s+)?nicht\\s+zuschlagsfähig','giu');
+ const floor=new RegExp('Gebote?(?:\s*,)?(?:\s+die)?\s+unter(?:\s+einem)?(?:\s+Betrag)?(?:\s+von)?\s*('+NUMBER+')'+DASH+'\s*'+CURRENCY+'[^.!?]{0,180}\bsind\s+(?:grundsätzlich\s+)?nicht\s+zuschlagsfähig','giu');
  for(const m of text.matchAll(floor))observations.push({kind:'minimum_offer',amount:germanAmount(m[1]),currency:'EUR',unit:'object',quote:m[0],start:m.index,end:m.index+m[0].length});
  const base={price_eur:null,price_kind:'unknown',price_excerpt:null,price_observations:observations};
- const unitFirst=new RegExp('(?:Kaufpreis|Preis)\\s+(?:pro|je)\\s*('+PRICED_AREA_UNIT+')\\s*(?:beträgt\\s*|:)?\\s*('+NUMBER+')'+DASH+'\\s*'+CURRENCY,'gi');
+ const unitFirst=new RegExp('(?:Kaufpreis|Preis)\s+(?:pro|je)\s*('+PRICED_AREA_UNIT+')\s*(?:beträgt\s*|:)?\s*('+NUMBER+')'+DASH+'\s*'+CURRENCY,'gi');
  for(const m of text.matchAll(unitFirst))observations.push({kind:'asking_price',amount:germanAmount(m[2]),currency:'EUR',unit:unitOf(m[1]),quote:m[0],start:m.index,end:m.index+m[0].length});
- const reversed=new RegExp('(?:pro|je)\\s*('+PRICED_AREA_UNIT+')\\s*(?:(?:kostet|beträgt|:|=)\\s*)?('+NUMBER+')'+DASH+'\\s*'+CURRENCY,'gi');
+ const reversed=new RegExp('(?:pro|je)\s*('+PRICED_AREA_UNIT+')\s*(?:(?:kostet|beträgt|:|=)\s*)?('+NUMBER+')'+DASH+'\s*'+CURRENCY,'gi');
  for(const m of text.matchAll(reversed))if(!observations.some(o=>o.start<=m.index&&o.end>=m.index+m[0].length))observations.push({kind:'asking_price',amount:germanAmount(m[2]),currency:'EUR',unit:unitOf(m[1]),quote:m[0],start:m.index,end:m.index+m[0].length});
  if(!observations.length)return {...base,price_kind:/nach gebot|bieterverfahren|gegen gebot/i.test(text)?'offer_required':'unknown'};
  if(observations.every(o=>o.period))return {...base,price_kind:'periodic_payment'};
