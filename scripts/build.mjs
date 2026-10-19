@@ -1,0 +1,18 @@
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
+import {build} from 'esbuild';
+await writeFile('src/innovation-guide.mjs','export const INNOVATION_GUIDE='+JSON.stringify(await readFile('docs/verbesserungen-v5.md','utf8'))+';\nexport const DISCOVERY_RESEARCH='+JSON.stringify(await readFile('docs/neue-suchansaetze.md','utf8'))+';\n');
+await writeFile('src/workflow-guide.mjs','export const WORKFLOW_GUIDE='+JSON.stringify(await readFile('docs/langsuche.md','utf8'))+';\n');
+await writeFile('src/audit-v6.mjs','export const AUDIT_V6='+JSON.stringify(await readFile('docs/ausfuehrung-v6.md','utf8'))+';\n');
+await writeFile('src/audit-v7.mjs','export const AUDIT_V7='+JSON.stringify(await readFile('docs/pruefung-v7.md','utf8'))+';\n');
+await writeFile('src/llm-guide.mjs','export const LLM_GUIDE='+JSON.stringify(await readFile('docs/llm-recherche.md','utf8'))+';\n');
+await writeFile('src/crawl-report.mjs','export const CRAWL_REPORT='+JSON.stringify(await readFile('docs/quellenausbau.md','utf8'))+';\n');
+await writeFile('src/review.mjs','export const REVIEW_MARKDOWN='+JSON.stringify(await readFile('docs/kritische-bewertung.md','utf8'))+';\n');
+await writeFile('src/llm-schema.mjs','export const LLM_PACKET_SCHEMA='+JSON.stringify(JSON.parse(await readFile('docs/llm-listing-schema.json','utf8')))+';\n');
+await writeFile('src/exploitation-guide.mjs','export const EXPLOITATION_GUIDE='+JSON.stringify(await readFile('docs/grundstueck-verwertung.md','utf8'))+';\nexport const EXPLOITATION_SOURCES='+JSON.stringify(JSON.parse(await readFile('docs/verwertungs-quellen.json','utf8')))+';\n');
+await mkdir('dist/server',{recursive:true});
+await build({entryPoints:['src/worker.mjs'],outfile:'dist/server/index.js',bundle:true,format:'esm',platform:'browser',target:'es2022',minify:true});
+await writeFile('dist/server/wrangler.json',JSON.stringify({name:'grundscout',main:'index.js',compatibility_date:'2026-09-01',d1_databases:[{binding:'DB',database_name:'grundscout',database_id:'00000000-0000-0000-0000-000000000000',migrations_dir:'../../drizzle'}]},null,2));
+console.log('Worker build ready: dist/server/index.js');
+const {TOOLS}=await import('../src/tools.mjs');const {ACTION_SCHEMAS}=await import('../src/scout.mjs');
+await writeFile('docs/tool-schemas.json',JSON.stringify(TOOLS,null,2)+'\n');
+await writeFile('docs/action-schemas.json',JSON.stringify(ACTION_SCHEMAS,null,2)+'\n');
