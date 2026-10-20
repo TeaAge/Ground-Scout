@@ -1,3 +1,4 @@
-const x=/[/u0000-/u001F]/g;
-const y="\\u0041";
-const z=/[/r/n/t]/g;
+const a=/[/u0000-/u001F]/g;
+const b=/[/r/n/t]/g;
+const c="\\u0041";
+const d="\\\\u0041";
