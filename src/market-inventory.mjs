@@ -1,0 +1,61 @@
+import {NORMALIZATION_VERSION} from './versions.mjs';
+import {validate} from './finance.mjs';
+import {evidenceDB,textHash} from './evidence.mjs';
+import {recordKey,mergeListing} from './market-identity.mjs';
+import {normalizeOffer} from './offer-policy.mjs';
+const object=(properties,required=[])=>({type:'object',properties,required,additionalProperties:false});
+const key={type:'string',pattern:'^[a-f0-9]{64}$'},job={type:'string',pattern:'^[A-Za-z0-9_-]{1,120}$'};
+export const INVENTORY_SCHEMA=object({after_key:{...key},limit:{type:'integer',minimum:1,maximum:100,default:30},use:{type:'string',enum:['all','building','solar'],default:'all'},changed_only:{type:'boolean',default:false},max_price_eur:{type:'number',minimum:0,maximum:100000000},include_expired:{type:'boolean',default:false},format:{type:'string',enum:['markdown','json'],default:'markdown'}});
+export const EVENTS_SCHEMA=object({listing_key:key,after_event:{type:'integer',minimum:0,default:0},limit:{type:'integer',minimum:1,maximum:100,default:30}},['listing_key']);
+export const BACKFILL_SCHEMA=object({job_id:job,after_key:key,limit:{type:'integer',minimum:1,maximum:100,default:40}},['job_id']);
+export const REFRESH_SCHEMA=object({job_id:job,listing_keys:{type:'array',minItems:1,maxItems:50,items:key}},['job_id','listing_keys']);
+const claims=r=>({price_eur:r.price_eur??null,price_kind:r.price_kind||'unknown',area_m2:r.area_m2??null,valuation_eur:r.valuation_eur??null,minimum_offer_eur:r.minimum_offer_eur??null,auction_date:r.auction_date||null,expired:!!r.expired,reserved:!!r.reserved,area_kind:r.area_kind||null,price_unit_ambiguous:!!r.price_unit_ambiguous,availability:r.availability_claim||null});
+export async function observeInventory(jobId,incoming,ctx,attempt=0){
+ const db=evidenceDB(ctx),r=normalizeOffer(incoming),k=await recordKey(r),old=await db.prepare('SELECT * FROM market_inventory WHERE owner_id=? AND listing_key=?').bind(ctx.userId,k).first(),sourceTime=r.fetched_at||null,received=new Date().toISOString(),origin=r.source_capture_origin==='user_submitted_browser_html'?'submitted':'retrieved',fingerprint=await textHash(JSON.stringify({claims:claims(r),stage:r.extraction_stage||'index',origin,source_text:r.source_text||''}));
+ const previous=old?JSON.parse(old.payload):null,sameTier=old&&origin===old.origin,chronological=!old||!sourceTime||!old.last_source_at||sourceTime>=old.last_source_at;
+ let projected=old?normalizeOffer(mergeListing(previous,r)):r;
+ if(old&&(!chronological||old.origin==='retrieved'&&origin==='submitted'))projected=previous;
+ const eligible=chronological&&!(old?.origin==='retrieved'&&origin==='submitted'),changed=!!old&&sameTier&&eligible&&JSON.stringify(previous.inventory_latest_claim||claims(previous))!==JSON.stringify(claims(r)),type=!old?'first_seen':origin==='submitted'?'submitted_claim':!chronological?'historical_observation':changed?'source_change_claim':'repeat_observation';
+ const eventId=await textHash(ctx.userId+'|'+k+'|'+jobId+'|'+fingerprint+'|'+(sourceTime||received)),data=JSON.stringify({...claims(r),raw_id:r.id,extraction_stage:r.extraction_stage,source_url:r.source_url,provenance:r.provenance,source_text_sha256:await textHash(r.source_text||''),price_verified:false});
+ const event=db.prepare('INSERT OR IGNORE INTO market_events (id,owner_id,listing_key,job_id,event_type,origin,source_at,received_at,fingerprint,payload) VALUES (?,?,?,?,?,?,?,?,?,?)').bind(eventId,ctx.userId,k,jobId,type,origin,sourceTime,received,fingerprint,data);
+ if(eligible)projected.inventory_latest_claim=claims(r);
+ const first=old?.first_seen||sourceTime||received,last=eligible&&sourceTime&&sourceTime>(old?.last_seen||'')?sourceTime:old?.last_seen||sourceTime||received,newOrigin=old?.origin==='retrieved'?'retrieved':origin;
+ const snapshot=db.prepare("INSERT INTO market_inventory (owner_id,listing_key,payload,origin,fingerprint,first_seen,last_seen,last_source_at,last_job_id,sightings,change_count) VALUES (?,?,?,?,?,?,?,?,?,1,?) ON CONFLICT(owner_id,listing_key) DO UPDATE SET payload=excluded.payload,origin=excluded.origin,fingerprint=excluded.fingerprint,last_seen=excluded.last_seen,last_source_at=excluded.last_source_at,last_job_id=excluded.last_job_id,sightings=(SELECT count(*) FROM market_events WHERE owner_id=excluded.owner_id AND listing_key=excluded.listing_key),change_count=(SELECT count(*) FROM market_events WHERE owner_id=excluded.owner_id AND listing_key=excluded.listing_key AND event_type='source_change_claim') WHERE market_inventory.fingerprint=?").bind(ctx.userId,k,JSON.stringify(projected),newOrigin,eligible?fingerprint:old.fingerprint,first,last,eligible?sourceTime:old.last_source_at,eligible?jobId:old.last_job_id,changed?1:0,old?.fingerprint||fingerprint);
+ const writes=await db.batch([event,snapshot]);if(writes[1].meta?.changes===0&&attempt<3)return observeInventory(jobId,incoming,ctx,attempt+1);return {listing_key:k,new:!old,changed,event_type:type};
+}
+export async function reprojectInventory(record,ctx){
+ const db=evidenceDB(ctx),key=await recordKey(record),old=await db.prepare('SELECT payload,last_source_at FROM market_inventory WHERE owner_id=? AND listing_key=?').bind(ctx.userId,key).first();if(!old)return false;
+ const corrected=normalizeOffer(JSON.parse(old.payload));corrected.inventory_latest_claim=claims(corrected);
+ if(JSON.stringify(corrected)===old.payload)return false;
+ const changed=await db.prepare('UPDATE market_inventory SET payload=? WHERE owner_id=? AND listing_key=? AND payload=?').bind(JSON.stringify(corrected),ctx.userId,key,old.payload).run();return !!changed.meta.changes;
+}
+export async function inventoryRows(input,ctx){
+ const o=validate(INVENTORY_SCHEMA,input),db=evidenceDB(ctx),args=[ctx.userId];let where='owner_id=?';
+ const legacy=await db.prepare("SELECT count(*) AS n FROM market_inventory WHERE owner_id=? AND COALESCE(json_extract(payload,'$.normalization_version'),0)<?").bind(ctx.userId,NORMALIZATION_VERSION).first();if(legacy.n)return {status:'needs_repair',requires_normalization:true,legacy_records:legacy.n,returned:0,items:[],next_after_key:null,market_complete:false,format:'markdown',text:'# Marktgedächtnis aktualisieren\n\n'+legacy.n+' ältere Projektionen müssen vor wirtschaftlichen Filtern repariert werden. Quellenereignisse bleiben unverändert.',next_call:{name:'groundscout',arguments:{action:'repair_inventory',parameters:{limit:40}}}};
+ if(o.after_key){where+=' AND listing_key>?';args.push(o.after_key);}where+=" AND COALESCE(json_extract(payload,'$.offer_quality.excluded_from_sale_views'),0)=0";if(!o.include_expired)where+=" AND COALESCE(json_extract(payload,'$.expired'),0)=0";
+ if(o.use==='building')where+=" AND json_extract(payload,'$.building_status')='indicated'";if(o.use==='solar')where+=" AND json_extract(payload,'$.solar_status') IN ('indicated','needs_review')";if(o.changed_only)where+=' AND change_count>0';if(o.max_price_eur!==undefined){where+=" AND json_extract(payload,'$.price_eur')<=?";args.push(o.max_price_eur);}
+ const rows=(await db.prepare('SELECT * FROM market_inventory WHERE '+where+' ORDER BY listing_key LIMIT ?').bind(...args,o.limit+1).all()).results,more=rows.length>o.limit,items=rows.slice(0,o.limit).map(r=>({...r,record:JSON.parse(r.payload),payload:undefined}));
+ const total=(await db.prepare('SELECT count(*) AS n FROM market_inventory WHERE owner_id=?').bind(ctx.userId).first()).n;
+ const common={inventory_total:total,returned:items.length,next_after_key:more?items.at(-1)?.listing_key:null,market_complete:false,sale_confirmed:false};
+ if(o.format==='json')return {...common,items};
+ const line=items.map(r=>'## '+r.record.title+'\n\nSchlüssel: '+r.listing_key+'\nLetzter Suchlauf: '+r.last_job_id+'\nQuelle: '+r.record.source_url+'\nPreisbehauptung: '+(r.record.price_eur??'offen')+' EUR · '+r.record.price_kind+'\nEigene erste / letzte Beobachtung: '+r.first_seen+' / '+r.last_seen+'\nBeobachtungen / Änderungen: '+r.sightings+' / '+r.change_count+'\nHerkunft: '+r.origin+' · Quelle ist keine Rechtstatsachenbestätigung.\n'+(r.record.price_refresh_required?'**Neuere Preisabweichung: Detailrefresh nötig.**\n':'')).join('\n');
+ return {...common,format:'markdown',text:'# Marktgedächtnis\n\nLaufübergreifende Quellenbehauptungen. Erstbeobachtung ist kein Anzeigenalter; fehlende Wiederbeobachtung kein Verkauf. Identität ist eine Anzeige, kein unabhängig verifiziertes Flurstück.\n\n'+line};
+}
+export const INVENTORY_REPAIR_SCHEMA=object({after_key:key,limit:{type:'integer',minimum:1,maximum:100,default:40}});
+export async function repairInventory(input,ctx){
+ const o=validate(INVENTORY_REPAIR_SCHEMA,input),db=evidenceDB(ctx),rows=(await db.prepare('SELECT listing_key,payload FROM market_inventory WHERE owner_id=? AND listing_key>? ORDER BY listing_key LIMIT ?').bind(ctx.userId,o.after_key||'',o.limit+1).all()).results;let changed=0;for(const r of rows.slice(0,o.limit))changed+=await reprojectInventory(JSON.parse(r.payload),ctx)?1:0;
+ const next=rows.length>o.limit?rows[o.limit-1].listing_key:null;return {processed:Math.min(rows.length,o.limit),projections_updated:changed,next_after_key:next,source_events_changed:false,next_call:next?{name:'groundscout',arguments:{action:'repair_inventory',parameters:{after_key:next,limit:o.limit}}}:{name:'groundscout',arguments:{action:'inventory',parameters:{}}}};
+}
+export async function inventoryEvents(input,ctx){
+ const o=validate(EVENTS_SCHEMA,input),db=evidenceDB(ctx),own=await db.prepare('SELECT listing_key FROM market_inventory WHERE owner_id=? AND listing_key=?').bind(ctx.userId,o.listing_key).first();if(!own)throw new Error('Eigenes Marktobjekt nicht gefunden.');
+ const rows=(await db.prepare('SELECT rowid AS event_cursor,* FROM market_events WHERE owner_id=? AND listing_key=? AND rowid>? ORDER BY rowid LIMIT ?').bind(ctx.userId,o.listing_key,o.after_event,o.limit+1).all()).results,more=rows.length>o.limit,items=rows.slice(0,o.limit).map(r=>({...r,...JSON.parse(r.payload),payload:undefined}));return {listing_key:o.listing_key,items,next_after_event:more?items.at(-1).event_cursor:null,sale_confirmed:false,changes_are_source_claims:true};
+}
+export async function backfillInventory(input,ctx){
+ const o=validate(BACKFILL_SCHEMA,input),db=evidenceDB(ctx);if(!await db.prepare('SELECT id FROM search_jobs WHERE owner_id=? AND id=?').bind(ctx.userId,o.job_id).first())throw new Error('Eigener Suchlauf nicht gefunden.');
+ const rows=(await db.prepare('SELECT listing_key,payload FROM search_listings WHERE owner_id=? AND job_id=? AND listing_key>? ORDER BY listing_key LIMIT ?').bind(ctx.userId,o.job_id,o.after_key||'',o.limit+1).all()).results;let added=0;for(const r of rows.slice(0,o.limit)){const result=await observeInventory(o.job_id,JSON.parse(r.payload),ctx);added+=result.new?1:0;}return {job_id:o.job_id,processed:Math.min(rows.length,o.limit),new_market_records:added,next_after_key:rows.length>o.limit?rows[o.limit-1].listing_key:null,history_backfilled:false,notice:'Übernimmt gespeicherte letzte Behauptungen mit ursprünglichem Quellzeitpunkt; erfindet keine frühere Historie.'};
+}
+export async function inventoryRefreshTasks(input,ctx){
+ const o=validate(REFRESH_SCHEMA,input),db=evidenceDB(ctx);if(o.listing_keys.some(k=>typeof k!=='string'||!new RegExp(key.pattern).test(k)))throw new Error('Ungültiger kanonischer Anzeigenschlüssel.');if(!await db.prepare('SELECT id FROM search_jobs WHERE owner_id=? AND id=?').bind(ctx.userId,o.job_id).first())throw new Error('Eigener Suchlauf nicht gefunden.');
+ const rows=[];for(const k of o.listing_keys){const r=await db.prepare('SELECT payload FROM market_inventory WHERE owner_id=? AND listing_key=?').bind(ctx.userId,k).first();if(!r)throw new Error('Eigenes Marktobjekt nicht gefunden.');rows.push(JSON.parse(r.payload));}
+ const batch=crypto.randomUUID();return {job_id:o.job_id,tasks:rows.map(r=>({url:r.source_url,kind:r.id?.startsWith('zvg:')?'zvg_detail':r.listing_identity==='dataset_feature'?(r.source_feed?.kind||'geojson'):'page',profile:r.source_feed?.profile||{id:r.provider,name:r.provider,category:r.source_category},stage:'detail',task_role:'detail',parent_listing:r,refresh:true,priority:5,batch_id:batch,depth:0})),notice:'Gezielter öffentlicher Neuabruf im nächsten Suchschritt; keine automatische Kontaktaufnahme.'};
+}
