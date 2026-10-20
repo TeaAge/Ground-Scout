@@ -1,0 +1,45 @@
+const EXPANDED_SOURCES=[
+ {id:'bahn',name:'DB Bahnliegenschaften',category:'public_seller',state:'all',url:'https://www.bahnliegenschaften.de/immobilien/',role:'direct_offers'},
+ {id:'lgsa',name:'Landgesellschaft Sachsen-Anhalt',category:'public_seller',state:'st',url:'https://www.lgsa.de/de/grundstuecke/bebaute-und-unbebaute-grundstuecke/',listing_selector:'a.grundstueckTeaser',role:'direct_offers'},
+ {id:'lbih',name:'Landesbetrieb Bau und Immobilien Hessen',category:'public_seller',state:'he',url:'https://lbih.hessen.de/service-center/fuer-immobilieninteressenten/unsere-immobilienangebote',role:'direct_offers'},
+ {id:'lbih_aneignung',name:'LBIH – Fiskalerbschaften und Aneignungsrechte',category:'public_seller',state:'he',url:'https://lbih.hessen.de/service-center/fuer-immobilieninteressenten/unsere-immobilien-galerie',role:'special_rights_offers'},
+ {id:'nlg',name:'Niedersächsische Landgesellschaft',category:'public_seller',state:'ni',url:'https://www.nlg.de/bauherren/gewerbegrundstuecke',role:'direct_offers'},
+ {id:'kip',name:'KIP Kommunale Immobilienplattform',category:'marketplace',state:'all',url:'https://www.kip.net/berlin/bauen/grundstuecke',role:'municipal_and_private_offers'},
+ {id:'dga',name:'Deutsche Grundstücksauktionen',category:'broker',state:'all',url:'https://www.dga-ag.de/',role:'voluntary_auctions'},
+ {id:'diia',name:'Deutsche Internet Immobilien Auktionen',category:'broker',state:'all',url:'https://www.diia.de/?page=objectListRunning&thema=auctions',role:'voluntary_auctions'},
+ {id:'land_immo',name:'land.immo',category:'marketplace',state:'all',url:'https://land.immo/',role:'land_marketplace'},
+ {id:'select_auktionen',name:'select-smart Immobilienauktionen',category:'marketplace',state:'all',url:'https://select-smart.de/immobilien/auktionen/art/grundstueck/',role:'voluntary_auction_aggregation'},
+ {id:'scout',name:'ImmoScout24',category:'marketplace',state:'all',url:'https://www.immobilienscout24.de/Suche/de/grundstueck-kaufen',role:'javascript_portal'},
+ {id:'immowelt',name:'immowelt',category:'marketplace',state:'all',url:'https://www.immowelt.de/suche/deutschland/grundstuecke/kaufen',role:'javascript_portal'},
+ {id:'westliche_boerde',name:'Verbandsgemeinde Westliche Börde',category:'municipality',state:'st',url:'https://www.westlicheboerde.de/Wirtschaft-Bauen/Grundst%C3%BCcke-Immobilien/',role:'direct_offers'},
+ {id:'gemeinde_ebern',name:'Verwaltungsgemeinschaft Ebern',category:'municipality',state:'by',url:'https://www.vg-ebern.de/nachrichten/artikel/oeffentliche-ausschreibung-verkauf-von-baugrundstuecken',role:'direct_offers'},
+ {id:'gemeinde_eurasburg',name:'Gemeinde Eurasburg',category:'municipality',state:'by',url:'https://www.gemeinde-eurasburg.de/unsere-gemeinde/bauen/baulandvergabe-1',role:'direct_offers'},
+ {id:'gemeinde_pommersfelden',name:'Gemeinde Pommersfelden',category:'municipality',state:'by',url:'https://www.pommersfelden.de/bauplaetze/',role:'direct_offers'},
+ {id:'gemeinde_hirzenhain',name:'Gemeinde Hirzenhain',category:'municipality',state:'he',url:'https://www.hirzenhain.de/news/1/1226414/nachrichten/ausschreibung-verkauf-von-baugrundst%C3%BCcken-zur-wohnbebauung--interessenbekundung.html',role:'direct_offers'},
+ {id:'gemeinde_seck',name:'Gemeinde Seck',category:'municipality',state:'rp',url:'https://gemeinde-seck.de/gemeindeverwaltung-rat/klosterwiese/',role:'direct_offers'},
+ {id:'stadt_winnenden',name:'Stadt Winnenden',category:'municipality',state:'bw',url:'https://www.winnenden.de/bauen-umwelt-und-verkehr/bauen-und-wohnen/bauplaetze--immobilien',role:'direct_offers'},
+ {id:'gemeinde_ammerbuch',name:'Gemeinde Ammerbuch',category:'municipality',state:'bw',url:'https://www.ammerbuch.de/bauen-umwelt/grundstuecksangelegenheiten/bauplaetze-immobilien',role:'direct_offers'},
+ {id:'amt_krakow',name:'Amt Krakow am See',category:'municipality',state:'mv',url:'https://www.amt-krakow-am-see.de/de/oeffentliche-bekanntmachungen/ausschreibungen/ausschreibung-grundstuecke/',role:'direct_offers'},
+ {id:'stadt_geseke',name:'Stadt Geseke',category:'municipality',state:'nw',url:'https://www.geseke.de/leben-wohnen/bauen-in-geseke/baugrundstuecke',role:'direct_offers'},
+ {id:'stadt_wetzlar',name:'Stadt Wetzlar',category:'municipality',state:'he',url:'https://wetzlar.de/leben-in-wetzlar/planenbauenwohnen/wohnbaugrundstuecke.php',role:'direct_offers'}
+].map(s=>({...s,default_enabled:true,max_pages:4}));
+export const SOURCE_CATALOG=[
+ {id:'court_koeln',name:'Amtsgericht Köln',category:'court',state:'nw',url:'https://www.ag-koeln.nrw.de/behoerde/zvg_termine/index.php',role:'court_notices_and_documents',default_enabled:true,max_pages:2},
+ {id:'court_muenchen',name:'Amtsgericht München',category:'court',state:'by',url:'https://www.justiz.bayern.de/gerichte-und-behoerden/amtsgerichte/muenchen/verfahren_30.php',role:'court_reference',default_enabled:true,max_pages:1},
+ {id:'court_dresden',name:'Amtsgericht Dresden',category:'court',state:'sn',url:'https://www.justiz.sachsen.de/agdd/zwangsversteigerung-4217.html',role:'court_reference',default_enabled:true,max_pages:1},
+ {id:'court_loerrach',name:'Amtsgericht Lörrach',category:'court',state:'bw',url:'https://amtsgericht-loerrach.justiz-bw.de/pb/,Lde/Startseite/AKTUELLES/Zwangsversteigerungstermine',role:'court_reference',default_enabled:false,max_pages:1},
+ {id:'court_sigmaringen',name:'Amtsgericht Sigmaringen',category:'court',state:'bw',url:'https://amtsgericht-sigmaringen.justiz-bw.de/pb/,Lde/Startseite/Aktuelles/Zwangsversteigerungstermine',role:'court_notices_and_documents',default_enabled:true,max_pages:2},
+ {id:'bvvg',name:'BVVG',category:'public_seller',state:'all',url:'https://www.bvvg.de/objekte/',role:'direct_offers',default_enabled:true,max_pages:4,listing_selector:'.property-container',link_selector:'.property-title a,.page-numbers',content_selector:'.immomakler-single,.properties'},
+ {id:'lgmv',name:'Landgesellschaft Mecklenburg-Vorpommern',category:'public_seller',state:'mv',url:'https://www.lgmv.de/flaechenmanagement/immobilien-und-grundstuecke/',role:'direct_offers',default_enabled:true,max_pages:6,link_selector:'a[href*="/flaechenmanagement/immobilien-und-grundstuecke/"]'},
+ {id:'plauen',name:'Stadt Plauen',category:'municipality',state:'sn',url:'https://www.plauen.de/Stadtentwicklung/Immobilienangebote/',role:'direct_offers',default_enabled:true,max_pages:2,listing_selector:'.accordion',content_selector:'main,#inhalt,.content'},
+ {id:'halle',name:'Stadt Halle (Saale)',category:'municipality',state:'st',url:'https://halle.de/leben-in-halle/bauen-und-wohnen/immobilienangebote-der-stadt-halle-saale',role:'direct_offers',default_enabled:true,max_pages:6,link_selector:'a[href*="/immobilienangebote-der-stadt-halle-saale/"]'},
+ {id:'blb_nrw',name:'Bau- und Liegenschaftsbetrieb NRW',category:'public_seller',state:'nw',url:'https://www.blb.nrw.de/service/service-fuer-immobilieninteressenten/immobilienangebote',role:'direct_offers',default_enabled:true,max_pages:4,link_selector:'a[href*="/immobilie/"]'},
+ {id:'sib',name:'Zentrales Flächenmanagement Sachsen',category:'public_seller',state:'sn',url:'https://www.immobilien.sachsen.de/suche.html?mksearch%5Bsearchtype%5D=extendedsearch&mksearch%5Bsubmitsearch%5D=Suchen&mksearch%5Bregionsearch%5D%5Bregion%5D=0',role:'public_search_form_no_records_extracted',default_enabled:false,max_pages:4},
+ {id:'zeitz',name:'Stadt Zeitz – öffentliche Ausschreibung',category:'municipality',state:'st',url:'https://www.zeitz.de/Kurzmen%C3%BC/Zekiwa-Nebengeb%C3%A4ude.php?object=tx%2C3429.10858.1',role:'direct_offer_example',default_enabled:false,max_pages:2},
+ {id:'bima',name:'BImA Immobilienportal',category:'public_seller',state:'all',url:'https://immobilienportal.bundesimmobilien.de/',role:'javascript_portal',default_enabled:false,max_pages:3},
+ {id:'zoll',name:'Zoll-Auktion',category:'public_auction',state:'all',url:'https://www.zoll-auktion.de/auktion/',role:'general_auction_no_verified_land_category',default_enabled:false,max_pages:1},
+,...EXPANDED_SOURCES].map(s=>({...s,max_depth:2,enabled:s.default_enabled,robots_policy:'observe',curated:true,source_type_origin:'curated_catalog',last_researched_at:'2026-10-08',integration:s.id==='bima'?'public_json_in_long_search':'html_or_document_crawler'}));
+export const CURATED_HOSTS=new Set(['www.zvg-portal.de','zvg-portal.de','www.kleinanzeigen.de','kleinanzeigen.de','www.gesetze-im-internet.de','www.bundesimmobilien.de','www.bodenrichtwerte-boris.de','bodenrichtwerte-boris.de','www.berlin.de','www.bundesnetzagentur.de',...SOURCE_CATALOG.map(s=>new URL(s.url).hostname)]);
+export const BROKER_DOMAINS=['diia.de','dga-ag.de','immobilienscout24.de','immowelt.de','immonet.de','engelvoelkers.com','engelvoelkers.de','von-poll.com','remax.de','mcmakler.de','planet-home.de','planethome.de','sparkassen-immobilien.de','postbank-immobilien.de','deutsche-bank-immobilien.de'];
+export function brokerDomain(host){host=host.toLowerCase().replace(/\.+$/,'');return BROKER_DOMAINS.some(d=>host===d||host.endsWith('.'+d));}
+export function catalogSource(id){return SOURCE_CATALOG.find(s=>s.id===id);}
