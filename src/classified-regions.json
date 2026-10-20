@@ -1,0 +1,82 @@
+[
+  {
+    "state": "bw",
+    "path": "/s-grundstuecke-garten/baden-wuerttemberg/c207l7970",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/baden-wuerttemberg/preis:0:20000/c207l7970+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "by",
+    "path": "/s-grundstuecke-garten/bayern/c207l5510",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/bayern/preis:0:20000/c207l5510+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "sn",
+    "path": "/s-grundstuecke-garten/sachsen/c207l3799",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/sachsen/preis:0:20000/c207l3799+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "th",
+    "path": "/s-grundstuecke-garten/thueringen/c207l3548",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/thueringen/preis:0:20000/c207l3548+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "ni",
+    "path": "/s-grundstuecke-garten/niedersachsen/c207l2428",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/niedersachsen/preis:0:20000/c207l2428+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "br",
+    "path": "/s-grundstuecke-garten/brandenburg/c207l7711",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/brandenburg/preis:0:20000/c207l7711+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "nw",
+    "path": "/s-grundstuecke-garten/nordrhein-westfalen/c207l928",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/nordrhein-westfalen/preis:0:20000/c207l928+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "mv",
+    "path": "/s-grundstuecke-garten/mecklenburg-vorpommern/c207l61",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/mecklenburg-vorpommern/preis:0:20000/c207l61+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "st",
+    "path": "/s-grundstuecke-garten/sachsen-anhalt/c207l2165",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/sachsen-anhalt/preis:0:20000/c207l2165+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "rp",
+    "path": "/s-grundstuecke-garten/rheinland-pfalz/c207l4938",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/rheinland-pfalz/preis:0:20000/c207l4938+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "he",
+    "path": "/s-grundstuecke-garten/hessen/c207l4279",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/hessen/preis:0:20000/c207l4279+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "sh",
+    "path": "/s-grundstuecke-garten/schleswig-holstein/c207l408",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/schleswig-holstein/preis:0:20000/c207l408+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "sl",
+    "path": "/s-grundstuecke-garten/saarland/c207l285",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/saarland/preis:0:20000/c207l285+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "be",
+    "path": "/s-grundstuecke-garten/berlin/c207l3331",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/berlin/preis:0:20000/c207l3331+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "hb",
+    "path": "/s-grundstuecke-garten/bremen/c207l1",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/bremen/preis:0:20000/c207l1+grundstuecke_garten.art_s:kaufen"
+  },
+  {
+    "state": "hh",
+    "path": "/s-grundstuecke-garten/hamburg/c207l9409",
+    "observed_url": "https://www.kleinanzeigen.de/s-grundstuecke-garten/hamburg/preis:0:20000/c207l9409+grundstuecke_garten.art_s:kaufen"
+  }
+]
